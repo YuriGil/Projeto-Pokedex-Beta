@@ -1,7 +1,33 @@
 /*Poke-Api - Manipulação da API*/
 const pokeApi = {};
 
-pokeApi.getPokemons = (offset = 0, limit = 10) => {
+//conversão do modelo do banco para o modelo criado (pokemon-model.js)
+//utilizando apenas as informações necessarias 
+function convertPokeApiDetailToPokemon(pokeDetail) {
+  const pokemon = new Pokemon()
+  pokemon.number = pokeDetail.order
+  pokemon.name - pokeDetail.name
+  
+  const types = pokeDetail.types.map((typeSlot) => typeSlot.type.name)
+  const [type] = types
+  
+  pokemon.types = types
+  pokemon.type = type
+
+  pokemon.photo = pokeDetail.sprites.other.showdown.front_default
+  
+  return pokemon
+}
+
+//transforma a lista da promise em varias promises individuais, ja convertidas para json
+//transforma o promise em um array, para q possam ser chamados independete um do outro
+pokeApi.getPokemonDetail = (pokemon) => {
+  return fetch(pokemon.url)
+  .then((response) => response.json())
+  .then(convertPokeApiDetailToPokemon)
+}
+
+pokeApi.getPokemons = (offset = 0, limit = 3) => {
   const url = `https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`;
   /*codigo de consumo de api*/
 
@@ -11,10 +37,15 @@ pokeApi.getPokemons = (offset = 0, limit = 10) => {
   return fetch(url)
     //.then = usado para manipular o resultado da promise
     //response.json() = converte o resultado para json, arquvi de comunicação reconhecido pelo JS
-    .then((response) => response.json())
     //pega o resultado convertido e disponibiliza para manipulação
+    .then((response) => response.json())
+    //resultado convertido em Lista-HTML para manipulação baseado na promise
     .then((jsonbody) => jsonbody.results)
-  //resultado convertido em Lista-HTML para manipulação baseado na promise
+    //manipula a lista de promises 
+    .then((pokemons) => pokemons.map(pokeApi.getPokemonDetail))
+    //uma lista de promessas de detalhes
+    .then((detailRequests) => Promise.all(detailRequests))
+    .then((pokemonsDetails) => pokemonsDetails)
     .catch((error) => console.error(error))
-    .finally(() => console.log("Requisição concluida"))
+    
 }
